@@ -300,10 +300,11 @@ private:
 
     template<typename Container>
     void CopyExternalData(const Container& c) {
-        std::vector<Type> tmp (c.begin(), c.end());
-        head_.next_node = nullptr;
-        for (auto iter = tmp.rbegin(); iter != tmp.rend(); ++iter){
-            PushFront(*iter);
+        Node *node = &head_;
+        for (auto iter = c.begin(); iter != c.end(); ++iter){
+            node->next_node = new Node(*iter, nullptr);
+            node = node->next_node;
+            ++size_;
         }
     }
 };
