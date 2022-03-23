@@ -89,6 +89,7 @@ class SingleLinkedList {
         // Возвращает ссылку на самого себя
         // Инкремент итератора, не указывающего на существующий элемент списка, приводит к неопределённому поведению
         BasicIterator& operator++() noexcept {
+            assert(node_ != nullptr);
             node_ = node_->next_node;
             return *this;
         }
@@ -107,6 +108,7 @@ class SingleLinkedList {
         // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
         // приводит к неопределённому поведению
         [[nodiscard]] reference operator*() const noexcept {
+            assert(node_ != nullptr);
             return this->node_->value;
         }
 
@@ -114,6 +116,7 @@ class SingleLinkedList {
         // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
         // приводит к неопределённому поведению
         [[nodiscard]] pointer operator->() const noexcept {
+            assert(node_ != nullptr);
             return &this->node_->value;
         }
 
@@ -191,25 +194,11 @@ public:
     ~SingleLinkedList() {Clear(); };
 
     SingleLinkedList(std::initializer_list<Type> values) {
-        std::vector<Type> copy (values.begin(), values.end());
-        SingleLinkedList reverse;
-        for (auto& value : copy){
-            reverse.PushFront(value);
-        }
-        head_ .next_node = nullptr;
-        for(auto& t : reverse){
-            PushFront(t);
-        }
+        CopyExternalData(values);
     }
 
     SingleLinkedList(const SingleLinkedList& other) {
-        SingleLinkedList copy;
-        for (auto i = other.cbegin(); i != other.cend(); ++i) {
-            copy.PushFront(*i);
-        }
-        for (auto i = copy.cbegin(); i != copy.cend(); ++i) {
-            PushFront(*i);
-        }
+        CopyExternalData(other);
     }
 
     SingleLinkedList& operator=(const SingleLinkedList& rhs) {
@@ -220,13 +209,10 @@ public:
 
     // Обменивает содержимое списков за время O(1)
     void swap(SingleLinkedList& other) noexcept {
-        auto tmp_size = this->size_;
+        std::swap(size_, other.size_);
+
         auto tmp_next_node = this->head_.next_node;
-
-        this->size_ = other.size_;
         this->head_.next_node = other.head_.next_node;
-
-        other.size_ = tmp_size;
         other.head_.next_node = tmp_next_node;
     }
 
@@ -253,6 +239,8 @@ public:
      * Если при создании элемента будет выброшено исключение, список останется в прежнем состоянии
      */
     Iterator InsertAfter(ConstIterator pos, const Type& value) {
+        assert(pos.node_ != nullptr);
+
         if (pos == this->before_begin()){
             PushFront(value);
             return Iterator(head_.next_node);
@@ -265,6 +253,10 @@ public:
     }
 
     void PopFront() noexcept {
+        if (size_ == 0){
+            return;
+        }
+
         Node *node = head_.next_node;
         head_.next_node = node->next_node;
         delete node;
@@ -276,6 +268,8 @@ public:
      * Возвращает итератор на элемент, следующий за удалённым
      */
     Iterator EraseAfter(ConstIterator pos) noexcept {
+        assert(pos.node_ != nullptr);
+
         if (pos == this->before_begin()){
             PopFront();
             return Iterator(head_.next_node);
@@ -297,13 +291,21 @@ public:
             delete tmp;
             --size_;
         }
-        // Реализуйте метод самостоятельно
     }
 
 private:
     // Фиктивный узел, используется для вставки "перед первым элементом"
     Node head_;
     size_t size_ = 0;
+
+    template<typename Container>
+    void CopyExternalData(const Container& c) {
+        std::vector<Type> tmp (c.begin(), c.end());
+        head_.next_node = nullptr;
+        for (auto iter = tmp.rbegin(); iter != tmp.rend(); ++iter){
+            PushFront(*iter);
+        }
+    }
 };
 
 template <typename Type>
